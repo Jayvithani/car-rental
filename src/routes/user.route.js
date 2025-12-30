@@ -10,13 +10,13 @@ router.post("/signup", async function(req,res) {
   try {
     const {name,password,email,age} = req.body;
 
-    // const existingUser = await userModel.findOne({email});
-    // if(existingUser){
-    //   return res.json({
-    //     message:"user already exists",
-    //     error: "User already exists"
-    //   })
-    // }
+    const existingUser = await userModel.findOne({email});
+    if(existingUser){
+      return res.json({
+        message:"user already exists",
+        error: "User already exists"
+      })
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10); 
 console.log("hashedPassword",hashedPassword);
@@ -82,10 +82,5 @@ router.post("/signin", async function (req, res) {
     });
   }
 });
-
-
-
-
-
 
 module.exports = router;
