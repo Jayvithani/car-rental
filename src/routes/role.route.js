@@ -58,7 +58,7 @@ router.get("/allRoles", async (req, res) => {
         data: deletedRole,
       });
     } catch (error) {
-      res.status(500).json({
+      res.json({
         message: "Error deleting role",
         error: error.message,
       });

@@ -8,31 +8,40 @@ const router = express.Router();
 router.post("/signup", async function(req,res) {
   console.log(req.body);
   try {
-    const {name,password,email,age} = req.body;
+    const {name,password,email,role } = req.body;
 
-    const existingUser = await userModel.findOne({email});
-    if(existingUser){
-      return res.json({
-        message:"user already exists",
-        error: "User already exists"
-      })
+    // const existingUser = await userModel.findOne({email});
+    // if(existingUser){
+    //   return res.json({
+    //     message:"user already exists",
+    //     error: "User already exists"
+    //   })
+    // }
+    let roleData;
+    if (role) {
+      roleData = await DB.ROLE.findOne({ role: role });
+      if (!roleData) {
+        return res.status(400).json({
+          message: "Please provide valid role",
+        });
+      }
     }
-
     const hashedPassword = await bcrypt.hash(password, 10); 
 console.log("hashedPassword",hashedPassword);
     const response = await userModel.create({
       name,
       password:hashedPassword,
-      age,
       email,
+      role: roleData?._id,
     })
     console.log("response",response);
-    const token =jwt.sign({UserID:response._id},process.env.JWT_SECRET)
-    console.log("token",token);
+ const token = jwt.sign(
+      { userId: response._id, role: role },
+      process.env.JWT_SECRET
+    );    console.log("token",token);
     return res.json({
       message:"user registered successfully",
       res:response,
-      token:token
     })
   } catch (error) {
     return res.json({
@@ -76,7 +85,7 @@ router.post("/signin", async function (req, res) {
     });
   } catch (error) {
     console.error("Signin error:", error);
-    res.json({
+    res.json({ 
       message: "something went wrong",
       error: error.message
     });
