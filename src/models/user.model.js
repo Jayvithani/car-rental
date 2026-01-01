@@ -18,6 +18,7 @@ const userSchema = new Schema({
   },
   role: {
     type: ObjectId,
+    ref: "roles",
   },
   isActive: {
     type: Boolean,

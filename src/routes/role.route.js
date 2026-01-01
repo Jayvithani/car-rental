@@ -1,23 +1,54 @@
 const express = require("express");
 const router = express.Router();
 const DB = require("./../models");
-/**
- * ROLE ADD
- * role/add
- * POST
- */
+const auth = require("../middleware/auth");
+const { ROLES } = require("../utils/constants/enums");
 
-router.post("/add", async (req, res) => {
-    const role = await DB.ROLE.create({
-      role: req.body.roleName || req.body.role,
+router.post("/add", auth(true,[ROLES.ADMIN]) ,async (req, res, next) => {
+  const { roleName } = req.body;
+  try {
+    const response = await DB.ROLE.create({
+      role: roleName,
     });
-    res.json(role);
-  });
-
+    return res.status(201).json({
+      message: "Role Created Successfully",
+      data: response,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error,
+    });
+  }
+});
 router.get("/allRoles", async (req, res) => {
-    const roles = await DB.ROLE.find();
-    res.json(roles);
-  });
+  try {
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+
+    const skip = (page - 1) * limit;
+
+    const totalRoles = await DB.ROLE.countDocuments();
+    const roles = await DB.ROLE.find()
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      page,
+      limit,
+      total: totalRoles,
+      totalPages: Math.ceil(totalRoles / limit),
+      data: roles
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Something went wrong",
+      error: error.message
+    });
+  }
+});
+
 
   router.put("/update/:id", async (req, res) => {
     try {

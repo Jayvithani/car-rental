@@ -3,7 +3,7 @@ const DB = require("./../models");
 
 module.exports = auth = (isTokenRequired = true, userAllowed = []) => {
   return async (req, res, next) => {
-    const token = req.header("x-auth-token");
+    const token = req.header("token");
     if (!token) {
       return res.status(400).json({
         message: "Token not found",
@@ -13,17 +13,22 @@ module.exports = auth = (isTokenRequired = true, userAllowed = []) => {
     }
     const decodeInformation = jwt.verify(token, process.env.JWT_SECRET);
     console.log("decodeInformation", decodeInformation);
+    console.log("userAllowed", userAllowed);
+
     const userInformation = await DB.USER.findOne({
       _id: decodeInformation?.userId,
     }).populate("role");
-    console.log("userInformation", userInformation);
-    const isUserAllowed = userAllowed.find(
-      (role) => role === userInformation.role
-    );
+    const isUserAllowed = userAllowed.includes(userInformation?.role?.role);
+    console.log("USER:", userInformation);
+console.log("ROLE:", userInformation.role);
+
+    console.log(isUserAllowed);
     if (!isUserAllowed) {
       return res.json({
         messgae: "Unauthorised Acess",
       });
     }
+    req.user = userInformation;
+    next();
   };
 };

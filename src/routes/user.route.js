@@ -2,20 +2,21 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/user.model");
+const DB = require("../models");
 
 const router = express.Router();
 
-router.post("/signup", async function(req,res) {
+router.post("/signup", async function (req, res) {
   console.log(req.body);
   try {
-    const {name,password,email,role } = req.body;
+    const { name, password, email, role } = req.body;
 
-    // const existingUser = await userModel.findOne({email});
-    // if(existingUser){
+    // const existingUser = await DB.USER.findOne({ email });
+    // if (existingUser) {
     //   return res.json({
-    //     message:"user already exists",
-    //     error: "User already exists"
-    //   })
+    //     message: "user already exists",
+    //     error: "User already exists",
+    //   });
     // }
     let roleData;
     if (role) {
@@ -26,29 +27,33 @@ router.post("/signup", async function(req,res) {
         });
       }
     }
-    const hashedPassword = await bcrypt.hash(password, 10); 
-console.log("hashedPassword",hashedPassword);
-    const response = await userModel.create({
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const response = await DB.USER.create({
       name,
-      password:hashedPassword,
+      password: hashedPassword,
       email,
-      role: roleData?._id,
-    })
-    console.log("response",response);
- const token = jwt.sign(
-      { userId: response._id, role: role },
+      role: roleData?._id
+    });
+    const token = jwt.sign(
+      { userId: response._id,role: roleData ? roleData.role : null},
       process.env.JWT_SECRET
-    );    console.log("token",token);
+    );
     return res.json({
-      message:"user registered successfully",
-      res:response,
-    })
+      message: "user registered successfully",
+      user: {
+        _id: response._id,
+        name: response.name,
+        email: response.email,
+        role: roleData ? roleData.role : null,
+        password: response.password,
+      }
+    });
   } catch (error) {
     return res.json({
-      message:"something went wrong",
-      error:error,
-    })
-  } 
+      message: "something went wrong",
+      error: error,
+    });
+  }
 });
 
 router.post("/signin", async function (req, res) {
@@ -62,7 +67,7 @@ router.post("/signin", async function (req, res) {
       });
     }
     
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email }).populate('role');
   
     if (!user) {
       return res.json({
@@ -81,7 +86,7 @@ router.post("/signin", async function (req, res) {
     const token = jwt.sign({ userId:user._id },process.env.JWT_SECRET)
     res.json({
       message: "signin successful",
-      token: token
+      token,
     });
   } catch (error) {
     console.error("Signin error:", error);

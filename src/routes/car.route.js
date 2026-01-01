@@ -23,8 +23,20 @@ router.post("/add", async (req, res) => {
 
 router.get("/allcar",async (req,res)=>{
   try {
-    const cars= await DB.CAR.find();
-    res.json(cars);
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);  
+    const skip = (page - 1) * limit;
+    const totalCars = await DB.CAR.countDocuments();
+    const cars= await DB.CAR.find()
+    .skip(skip)
+    .limit(limit);
+    res.json({
+      page,
+      limit,
+      total: totalCars,
+      totalPages: Math.ceil(totalCars / limit),
+      data: cars
+    });
   } catch (error) {
     res.json({
       message:"no car avalible",
@@ -32,6 +44,22 @@ router.get("/allcar",async (req,res)=>{
     })
   }
 })
+router.get("/allcar/:id",async (req,res)=>{
+  try {
+    const {id} = req.params;
+    const car = await DB.CAR.findById(id);
+    res.json({
+      data: car
+    });
+  }
+  catch (error) {
+    res.json({
+      message:"no car avalible",
+      error:error.message
+    })
+  }
+})
+
 router.put("/updatecar/:id",async (req,res)=>{
   try {
  const {id} = req.params;
@@ -40,7 +68,6 @@ router.put("/updatecar/:id",async (req,res)=>{
     const updatecar = await DB.CAR.findByIdAndUpdate(
     id,
     {name: name?.toUpperCase(),brandName,carType,manufacturingYear,features,transmission,capicity,sellingPrice, owner, serviceType,rentPerHour,},
-    { new: true }
     );
     res.json({
       message:"car update successfully",
